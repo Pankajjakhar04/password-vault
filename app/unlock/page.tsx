@@ -37,7 +37,10 @@ export default function UnlockPage() {
   }, [email]);
 
   const handlePinSubmit = async (value: string) => {
-    if (!email) {
+    // Normalize email before every operation to ensure consistent cache keys and API lookups
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
       setMessage("Enter your email before the PIN.");
       return;
     }
@@ -51,13 +54,13 @@ export default function UnlockPage() {
     setMessage(null);
 
     try {
-      let salt = getStoredPinSalt(email);
+      let salt = getStoredPinSalt(normalizedEmail);
 
       if (!salt) {
         const saltResponse = await fetch("/api/auth/login/pin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, action: "salt" }),
+          body: JSON.stringify({ email: normalizedEmail, action: "salt" }),
         });
 
         const saltPayload = await parseApiResponse<{
@@ -76,7 +79,7 @@ export default function UnlockPage() {
         }
 
         salt = String(saltPayload.data.pinSalt);
-        setStoredPinSalt(email, salt);
+        setStoredPinSalt(normalizedEmail, salt);
       }
 
       if (!salt) {
@@ -92,7 +95,7 @@ export default function UnlockPage() {
       const response = await fetch("/api/auth/login/pin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, pinVerificationHash: verificationHash }),
+        body: JSON.stringify({ email: normalizedEmail, pinVerificationHash: verificationHash }),
       });
 
       const payload = await parseApiResponse<{
@@ -122,7 +125,7 @@ export default function UnlockPage() {
       );
 
       setAesKey(masterKey);
-      setEmail(email);
+      setEmail(normalizedEmail);
       setPinSalt(salt);
       setPinVerified(true);
       setMessage("PIN verified. Confirm fingerprint next.");
@@ -134,7 +137,9 @@ export default function UnlockPage() {
   };
 
   const handleWebauthn = async () => {
-    if (!email) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
       setMessage("Enter your email first.");
       return;
     }
@@ -153,7 +158,7 @@ export default function UnlockPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email: normalizedEmail }),
         }
       );
 
@@ -186,7 +191,7 @@ export default function UnlockPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, credential: credentialJson }),
+          body: JSON.stringify({ email: normalizedEmail, credential: credentialJson }),
         }
       );
 
@@ -214,14 +219,14 @@ export default function UnlockPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-16">
-      <div className="glass-card rounded-3xl px-8 py-10 sm:px-12">
+    <main className="mx-auto flex min-h-[100svh] w-full max-w-5xl flex-col px-4 py-8 sm:px-6 sm:py-12">
+      <div className="glass-card rounded-3xl px-5 py-8 sm:px-10 sm:py-10">
         <div className="flex flex-col gap-6">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-[color:var(--vault-accent)]">
               Unlock vault
             </p>
-            <h1 className="text-3xl font-semibold sm:text-4xl">
+            <h1 className="text-2xl font-semibold sm:text-4xl">
               Two-step unlock required
             </h1>
             <p className="mt-2 text-sm text-zinc-400">
@@ -237,7 +242,7 @@ export default function UnlockPage() {
               onChange={(event) => setLocalEmail(event.target.value)}
               type="email"
               placeholder="you@vault.com"
-              className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+              className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
             />
           </label>
 

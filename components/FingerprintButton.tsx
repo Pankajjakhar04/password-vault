@@ -18,7 +18,8 @@ export default function FingerprintButton({
       type="button"
       onClick={onClick}
       disabled={disabled || loading}
-      className={`group relative flex h-12 items-center gap-3 rounded-full border border-[color:var(--vault-border)] px-5 text-sm font-semibold text-zinc-100 transition hover:border-[color:var(--vault-accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 ${
+      style={{ touchAction: "manipulation" }}
+      className={`group relative flex w-full h-12 items-center justify-center gap-3 rounded-full border border-[color:var(--vault-border)] px-5 text-sm font-semibold text-zinc-100 transition hover:border-[color:var(--vault-accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit ${
         loading ? "fingerprint-pulse" : ""
       }`}
     >

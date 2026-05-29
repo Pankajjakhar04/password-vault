@@ -43,7 +43,10 @@ export default function SetupPage() {
   const handleRegister = async () => {
     setMessage(null);
 
-    if (!email || pin.length !== 6) {
+    // Normalize email to ensure consistent salt storage key and API lookups
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail || pin.length !== 6) {
       setMessage("Enter your email and a 6-digit PIN to continue.");
       return;
     }
@@ -86,7 +89,7 @@ export default function SetupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           stage: "start",
-          email,
+          email: normalizedEmail,
           pinSalt,
           pinVerificationHash: verificationHash,
           qaSalt,
@@ -126,7 +129,7 @@ export default function SetupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           stage: "finish",
-          email,
+          email: normalizedEmail,
           credential: credentialJson,
         }),
       });
@@ -141,8 +144,8 @@ export default function SetupPage() {
         return;
       }
 
-      setStoredPinSalt(email, pinSalt);
-      setEmail(email);
+      setStoredPinSalt(normalizedEmail, pinSalt);
+      setEmail(normalizedEmail);
       setPinSalt(pinSalt);
       setMessage("Setup complete. You can now unlock the vault.");
       router.push("/unlock");
@@ -156,14 +159,14 @@ export default function SetupPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-16">
-      <div className="glass-card rounded-3xl px-8 py-10 sm:px-12">
+    <main className="mx-auto flex min-h-[100svh] w-full max-w-5xl flex-col px-4 py-8 sm:px-6 sm:py-12">
+      <div className="glass-card rounded-3xl px-5 py-8 sm:px-10 sm:py-10">
         <div className="flex flex-col gap-6">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-[color:var(--vault-accent)]">
               First-time setup
             </p>
-            <h1 className="text-3xl font-semibold sm:text-4xl">
+            <h1 className="text-2xl font-semibold sm:text-4xl">
               Create your vault
             </h1>
             <p className="mt-2 text-sm text-zinc-400">
@@ -179,7 +182,7 @@ export default function SetupPage() {
               onChange={(event) => setLocalEmail(event.target.value)}
               type="email"
               placeholder="you@vault.com"
-              className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+              className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
             />
           </label>
 
@@ -196,7 +199,7 @@ export default function SetupPage() {
                 onChange={(event) =>
                   setQuestionOne(event.target.value as SecurityQuestionId)
                 }
-                className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+                className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
               >
                 {securityQuestions.map((question) => (
                   <option key={question.id} value={question.id}>
@@ -210,7 +213,7 @@ export default function SetupPage() {
               <input
                 value={answerOne}
                 onChange={(event) => setAnswerOne(event.target.value)}
-                className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+                className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
                 placeholder="Enter your answer"
               />
             </label>
@@ -221,7 +224,7 @@ export default function SetupPage() {
                 onChange={(event) =>
                   setQuestionTwo(event.target.value as SecurityQuestionId)
                 }
-                className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+                className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
               >
                 {securityQuestions.map((question) => (
                   <option key={question.id} value={question.id}>
@@ -235,7 +238,7 @@ export default function SetupPage() {
               <input
                 value={answerTwo}
                 onChange={(event) => setAnswerTwo(event.target.value)}
-                className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+                className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
                 placeholder="Enter your answer"
               />
             </label>

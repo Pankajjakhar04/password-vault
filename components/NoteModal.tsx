@@ -43,8 +43,8 @@ export default function NoteModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6">
-      <div className="glass-card w-full max-w-lg rounded-2xl p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-0 pb-0 sm:items-center sm:px-6">
+      <div className="glass-card w-full max-w-lg overflow-y-auto rounded-t-2xl p-6 sm:rounded-2xl" style={{ maxHeight: '90dvh' }}>
         <div className="mb-4">
           <h2 className="text-xl font-semibold">{title ?? "Add note"}</h2>
           <p className="text-sm text-zinc-400">
@@ -57,7 +57,7 @@ export default function NoteModal({
             <input
               value={noteTitle}
               onChange={(event) => setNoteTitle(event.target.value)}
-              className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+              className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
               placeholder="Server creds, recovery, etc."
             />
           </label>
@@ -66,7 +66,7 @@ export default function NoteModal({
             <textarea
               value={body}
               onChange={(event) => setBody(event.target.value)}
-              className="min-h-[140px] rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+              className="min-h-[120px] rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
               placeholder="Paste your secret text here"
             />
           </label>
@@ -75,7 +75,7 @@ export default function NoteModal({
           <button
             type="button"
             onClick={onClose}
-            className="h-11 rounded-full border border-[color:var(--vault-border)] px-5 text-sm"
+            className="flex h-12 items-center justify-center rounded-full border border-[color:var(--vault-border)] px-5 text-sm"
           >
             Cancel
           </button>
@@ -87,7 +87,7 @@ export default function NoteModal({
                 body: body.trim(),
               })
             }
-            className="h-11 rounded-full bg-[color:var(--vault-accent)] px-6 text-sm font-semibold text-black"
+            className="flex h-12 items-center justify-center rounded-full bg-[color:var(--vault-accent)] px-6 text-sm font-semibold text-black"
           >
             {submitLabel ?? "Save note"}
           </button>

@@ -210,14 +210,14 @@ export default function ResetPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-16">
-      <div className="glass-card rounded-3xl px-8 py-10 sm:px-12">
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-8 sm:px-6 sm:py-12">
+      <div className="glass-card rounded-3xl px-5 py-8 sm:px-10 sm:py-10">
         <div className="flex flex-col gap-6">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-[color:var(--vault-accent)]">
               Reset PIN
             </p>
-            <h1 className="text-3xl font-semibold sm:text-4xl">
+            <h1 className="text-2xl font-semibold sm:text-4xl">
               Verify your identity
             </h1>
             <p className="mt-2 text-sm text-zinc-400">
@@ -234,12 +234,12 @@ export default function ResetPage() {
                 onChange={(event) => setEmail(event.target.value)}
                 type="email"
                 placeholder="you@vault.com"
-                className="flex-1 rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+                className="flex-1 rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
               />
               <button
                 type="button"
                 onClick={loadQuestions}
-                className="h-11 rounded-full border border-[color:var(--vault-border)] px-5 text-sm"
+                className="flex h-12 items-center justify-center rounded-full border border-[color:var(--vault-border)] px-5 text-sm"
               >
                 {loadingMeta ? "Loading..." : "Load questions"}
               </button>
@@ -253,7 +253,7 @@ export default function ResetPage() {
                 <input
                   value={answerOne}
                   onChange={(event) => setAnswerOne(event.target.value)}
-                  className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+                  className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
                   placeholder="Answer 1"
                 />
               </label>
@@ -262,7 +262,7 @@ export default function ResetPage() {
                 <input
                   value={answerTwo}
                   onChange={(event) => setAnswerTwo(event.target.value)}
-                  className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+                  className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-base text-white"
                   placeholder="Answer 2"
                 />
               </label>

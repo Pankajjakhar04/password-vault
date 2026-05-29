@@ -43,8 +43,9 @@ export default function PinInput({
         }
       }}
       role="presentation"
+      style={{ touchAction: "manipulation" }}
     >
-      <div className="flex gap-3">
+      <div className="flex min-h-[44px] items-center gap-3 py-1">
         {Array.from({ length }).map((_, index) => (
           <div
             key={`pin-dot-${index}`}

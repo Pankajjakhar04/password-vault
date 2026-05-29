@@ -6,6 +6,7 @@ import AddEntryModal, { EntryFormData } from "@/components/AddEntryModal";
 import NoteModal, { NoteFormData } from "@/components/NoteModal";
 import NoteCard from "@/components/NoteCard";
 import PasswordCard from "@/components/PasswordCard";
+import SessionTimer from "@/components/SessionTimer";
 import { useAuth } from "@/lib/auth-context";
 import { decryptText, encryptText } from "@/lib/crypto";
 import { parseApiResponse } from "@/lib/http";
@@ -47,7 +48,7 @@ type VaultNote = {
 };
 
 export default function VaultPage() {
-  const { aesKey, logout, email } = useAuth();
+  const { aesKey, logout, email, timeRemaining, isTimerPaused, pauseTimer, resumeTimer } = useAuth();
   const [entries, setEntries] = useState<VaultEntry[]>([]);
   const [notes, setNotes] = useState<VaultNote[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,57 +71,66 @@ export default function VaultPage() {
       return false;
     }
 
-    const challengeResponse = await fetch(
-      "/api/auth/login/webauthn/challenge",
-      {
+    // Freeze the inactivity timer so the native biometric prompt
+    // doesn't cause an accidental auto-logout while the user scans.
+    pauseTimer();
+
+    try {
+      const challengeResponse = await fetch(
+        "/api/auth/login/webauthn/challenge",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const challengePayload = await parseApiResponse<{
+        options?: unknown;
+        error?: string;
+      }>(challengeResponse);
+
+      if (!challengePayload.ok || !challengePayload.data?.options) {
+        setError(challengePayload.error ?? "Unable to start fingerprint check.");
+        return false;
+      }
+
+      const publicKey = decodeAuthenticationOptions(
+        challengePayload.data.options as any
+      );
+      const credential = (await navigator.credentials.get({
+        publicKey,
+      })) as PublicKeyCredential | null;
+
+      if (!credential) {
+        setError("Fingerprint verification was cancelled.");
+        return false;
+      }
+
+      const credentialJson = publicKeyCredentialToJSON(credential);
+
+      const verifyResponse = await fetch("/api/auth/login/webauthn/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, credential: credentialJson }),
+      });
+
+      const verifyPayload = await parseApiResponse<{
+        success?: boolean;
+        error?: string;
+      }>(verifyResponse);
+
+      if (!verifyPayload.ok) {
+        setError(verifyPayload.error ?? "Fingerprint verification failed.");
+        return false;
       }
-    );
 
-    const challengePayload = await parseApiResponse<{
-      options?: unknown;
-      error?: string;
-    }>(challengeResponse);
-
-    if (!challengePayload.ok || !challengePayload.data?.options) {
-      setError(challengePayload.error ?? "Unable to start fingerprint check.");
-      return false;
+      return true;
+    } finally {
+      // Always resume — whether auth succeeded, failed, or was cancelled.
+      resumeTimer();
     }
-
-    const publicKey = decodeAuthenticationOptions(
-      challengePayload.data.options as any
-    );
-    const credential = (await navigator.credentials.get({
-      publicKey,
-    })) as PublicKeyCredential | null;
-
-    if (!credential) {
-      setError("Fingerprint verification was cancelled.");
-      return false;
-    }
-
-    const credentialJson = publicKeyCredentialToJSON(credential);
-
-    const verifyResponse = await fetch("/api/auth/login/webauthn/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, credential: credentialJson }),
-    });
-
-    const verifyPayload = await parseApiResponse<{
-      success?: boolean;
-      error?: string;
-    }>(verifyResponse);
-
-    if (!verifyPayload.ok) {
-      setError(verifyPayload.error ?? "Fingerprint verification failed.");
-      return false;
-    }
-
-    return true;
-  }, [email]);
+  }, [email, pauseTimer, resumeTimer]);
 
   const fetchEntries = useCallback(async () => {
     if (!aesKey) {
@@ -428,15 +438,15 @@ export default function VaultPage() {
 
   if (!aesKey) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-16">
-        <div className="glass-card rounded-3xl px-10 py-12 text-center">
+      <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-5 py-8">
+        <div className="glass-card w-full rounded-3xl px-6 py-10 text-center">
           <h1 className="text-2xl font-semibold">Vault locked</h1>
           <p className="mt-3 text-sm text-zinc-400">
             Unlock the vault with your PIN and fingerprint to continue.
           </p>
           <Link
             href="/unlock"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[color:var(--vault-accent)] px-6 text-sm font-semibold text-black"
+            className="mt-6 inline-flex h-12 items-center justify-center rounded-full bg-[color:var(--vault-accent)] px-6 text-sm font-semibold text-black"
           >
             Go to unlock
           </Link>
@@ -446,40 +456,41 @@ export default function VaultPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-6 py-16">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
+      <div className="flex flex-col gap-4">
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-[color:var(--vault-accent)]">
             Vault
           </p>
           <h1 className="text-3xl font-semibold sm:text-4xl">Your entries</h1>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        {/* Action buttons: 2-col grid on mobile, row on sm+ */}
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:items-center sm:gap-3">
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="h-11 rounded-full bg-[color:var(--vault-accent)] px-6 text-sm font-semibold text-black"
+            className="flex h-11 items-center justify-center rounded-full bg-[color:var(--vault-accent)] px-4 text-sm font-semibold text-black"
           >
             Add entry
           </button>
           <button
             type="button"
-            onClick={fetchEntries}
-            className="h-11 rounded-full border border-[color:var(--vault-border)] px-5 text-sm"
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-          <button
-            type="button"
             onClick={() => setNoteModalOpen(true)}
-            className="h-11 rounded-full border border-[color:var(--vault-border)] px-5 text-sm"
+            className="flex h-11 items-center justify-center rounded-full border border-[color:var(--vault-border)] px-4 text-sm"
           >
             Add note
           </button>
           <button
             type="button"
+            onClick={fetchEntries}
+            className="flex h-11 items-center justify-center rounded-full border border-[color:var(--vault-border)] px-4 text-sm"
+          >
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+          <button
+            type="button"
             onClick={logout}
-            className="h-11 rounded-full border border-[color:var(--vault-border)] px-5 text-sm text-zinc-300"
+            className="flex h-11 items-center justify-center rounded-full border border-[color:var(--vault-border)] px-4 text-sm text-zinc-300"
           >
             Lock vault
           </button>
@@ -494,7 +505,7 @@ export default function VaultPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search by site, username, or note"
-          className="rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
+          className="w-full rounded-xl border border-[color:var(--vault-border)] bg-[#0b0b0b] px-4 py-3 text-sm text-white"
         />
       </div>
 
@@ -586,6 +597,12 @@ export default function VaultPage() {
         }
         title={editingNote ? "Edit note" : "Add note"}
         submitLabel={editingNote ? "Save changes" : "Save note"}
+      />
+
+      <SessionTimer
+        timeRemaining={timeRemaining}
+        isTimerPaused={isTimerPaused}
+        onStay={() => window.dispatchEvent(new MouseEvent("mousemove"))}
       />
     </main>
   );
