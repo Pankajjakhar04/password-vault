@@ -23,8 +23,11 @@ const fromBase64 = (base64: string) => {
   return bytes;
 };
 
-const toArrayBuffer = (data: Uint8Array) =>
-  data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+const toArrayBuffer = (data: Uint8Array) => {
+  const copy = new Uint8Array(data.byteLength);
+  copy.set(data);
+  return copy.buffer;
+};
 
 export async function generateSaltBase64() {
   const salt = crypto.getRandomValues(new Uint8Array(16));
