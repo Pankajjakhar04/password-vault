@@ -23,6 +23,9 @@ const fromBase64 = (base64: string) => {
   return bytes;
 };
 
+const toArrayBuffer = (data: Uint8Array) =>
+  data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+
 export async function generateSaltBase64() {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   return toBase64(salt);
@@ -99,7 +102,7 @@ export const wrapKeyBytes = async (
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     wrappingKey,
-    rawKey
+    toArrayBuffer(rawKey)
   );
 
   return {
@@ -129,7 +132,7 @@ export const unwrapMasterKey = async (
   wrappingKey: CryptoKey
 ) => {
   const rawKey = await unwrapKeyBytes(ciphertextBase64, ivBase64, wrappingKey);
-  return importAesKey(rawKey);
+  return importAesKey(toArrayBuffer(rawKey));
 };
 
 export async function encryptText(plaintext: string, aesKey: CryptoKey) {
